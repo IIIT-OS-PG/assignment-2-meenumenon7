@@ -10,6 +10,7 @@
 #include<unistd.h>
 #include"register.h"
 using namespace std;
+int gp_count=0;
 struct user_details
 {
 	string uname;
@@ -139,9 +140,10 @@ int create_group(struct threads_info *p)
 	
 	//check if active
 	if(active_user.find(port_no)==active_user.end())
+	{	cout<<"incative\n;";
 		return -1;
 
-
+	}
 	int readbytes=recv(from_client,buffer,512,0);
 	gi.gid=buffer;
 	cout<<"the group id is "<<buffer<<endl;
@@ -149,7 +151,7 @@ int create_group(struct threads_info *p)
 	gi.owner=username;
 	gi.port=port_no;
 	gi.ip=p->cip;
-
+	gp_count++;
 	pair<string,int> p1(my_ip,port_no);
 	pair<string,pair<string,int>> p2(username,p1);
 	gi.members.push_back(p2);
@@ -168,13 +170,29 @@ int list_groups(threads_info *p)
 
 	int port=p->cport;
 	if(active_user.find(port)==active_user.end())
+	{	cout<<"inactive\n;";
 		return -1;
-
+	}
+	int siz=0;
+	// for(auto x : group_map){
+	// 	siz++;
+	// }
+	//int size_of_list=siz;
 	int size_of_list=group_map.size();
+	if(size_of_list==0)
+		return -2;
 	char buffer[512];
-  	int sentbytes=send(p->client_fd,&size_of_list,sizeof(size_of_list),0);
+	int sentbytes=send(p->client_fd,&size_of_list,sizeof(size_of_list),0);
+	// char intbuf[10];
+	// string s=to_string(gp_count);
+	// strcpy(intbuf,s.c_str());
+ //  	int sentbytes=send(p->client_fd,intbuf,10,0);
+ //  	cout<<"sending list size as "<<intbuf<<endl;
+  	//int sentbytes=send(p->client_fd,&gp_count,sizeof(gp_count),0);
   	memset(buffer,'\0',512);
   	int readbytes=recv(p->client_fd,buffer,512,0);
+ 	//return 0;
+  	cout<<"buffer"<<buffer<<endl;
   	for (auto x : group_map) 
     {//   cout << x.first<<endl;
     	string s=x.first;
@@ -183,10 +201,12 @@ int list_groups(threads_info *p)
     	cout<<"sending "<<grp<<endl;
     	sentbytes=send(p->client_fd,grp,512,0);
     	readbytes=recv(p->client_fd,buffer,512,0);
+    	cout<<"received inside  group_map"<<buffer<<endl;
     	memset(buffer,'\0',512);
     	memset(grp,'\0',512);
 
     }
+    cout<<"exiting list_groups"<<endl;
     return 0;
 	// unordered_map<string,group_info>::iterator itr;
 	// while(itr!=group_map.end())
@@ -199,7 +219,11 @@ int list_groups(threads_info *p)
 
 int upload_file(threads_info *p)
 {
-
+	int port=p->cport;
+	if(active_user.find(port)==active_user.end())
+	{	cout<<"inactive\n;";
+		return -1;
+	}
 
 
 	int from_client=p->client_fd;
@@ -427,7 +451,9 @@ void *start_fn(void *cs)
 			}
 			else if(strcmp(user_q,"create_group")==0)
 			{
-				create_group(sti);cout<<"back from create group"<<endl;			
+				ret_val=create_group(sti);cout<<"back from create group"<<endl;			
+				if(ret_val==-1)
+					send(sti->client_fd,"notlogged",sizeof("notlogged"),0);
 			}
 			else if(strcmp(user_q,"join_group")==0)
 			{
@@ -442,10 +468,13 @@ void *start_fn(void *cs)
 		// 	}
 		 	else if(strcmp(user_q,"list_groups")==0)
 		 	{
-		 		cout<<"calinf leave grpup"<<endl;
+		 		cout<<"calinf list grpup"<<endl;
 		 		ret_val=list_groups(sti);
-		 		send(sti->client_fd,&ret_val,sizeof(ret_val),0);
-		 	
+		 		cout<<"the return value is "<<ret_val<<endl;
+		 		 if(ret_val==-1)
+		 			  send(sti->client_fd,&ret_val,sizeof(ret_val),0);
+		 		if(ret_val==-2)
+		 			 send(sti->client_fd,&ret_val,sizeof(ret_val),0);
 		 	}
 		// 	else if(strcmp(user_q,"accept_request")==0)
 		// 	{
@@ -463,7 +492,7 @@ void *start_fn(void *cs)
 		 	{ cout<<"callingupload file"<<endl;
 		 		ret_val=upload_file(sti);
 		 		if(ret_val==-1)
-		 			pthread_exit(NULL);
+		 			int x=send(sti->client_fd,"notlogged",sizeof("notlogged"),0);
 		 		
 			}
 		// 	else if(strcmp(user_q,"download_file")==0)

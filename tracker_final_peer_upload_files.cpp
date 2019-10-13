@@ -314,12 +314,13 @@ void * start_client(void *y)
 		x=send(client_fd,spaced_token[1],sizeof(string(spaced_token[1])),0);
 		memset(buffer,'\0',512);
 		int ret;
-		readbytes=recv(client_fd,&ret,sizeof(ret),0);
+		readbytes=recv(client_fd,buffer,512,0);
+		//readbytes=recv(client_fd,&ret,sizeof(ret),0);
 		//cout<<buffer<<endl;
-		if(ret==-1)
+		if(strcmp(buffer,"notlogged")==0)
 			cout<<"PLease login first"<<endl;
 		else
-			cout<<"Group created ."<<endl;
+			cout<<"created the group ."<<endl;
 		memset(buffer,'\0',512);
 
 
@@ -381,41 +382,64 @@ void * start_client(void *y)
 	}
 	else if(strcmp(spaced_token[0],"list_groups")==0)
 	{
+		cout<<"sending ist"<<endl;
 		int x=send(client_fd,"list_groups",sizeof(string("list_groups")),0);
 		//cout<<"sent uname"<<x;
-		int size_of_list;
+		int size_of_list=0;
+		// char nbuffer[10];
+		// memset(nbuffer,'\0',10);
+		// cout<<"waiting to receive size"<<endl;
+		// int readbytes=recv(client_fd,nbuffer,10,0);
+		// cout<<"nbuffer ="<<nbuffer<<endl;
+		//string test=to_string(nbuffer);
+		// size_of_list=atoi(nbuffer);
+		cout<<"sizeof list "<<size_of_list<<endl;
 		int readbytes=recv(client_fd,&size_of_list,sizeof(size_of_list),0);
-		cout<<"list size is "<<size_of_list<<endl;
-		x=send(client_fd,"ok",sizeof("ok"),0);
-		memset(buffer,'\0',512);
-		int val=0;
-		while(val<size_of_list)
+		//int readbytes=read(client_fd,nbuffer,10);
+		//cout<<nbuffer<<"with read value"<<endl;
+		//size_of_list=atoi(nbuffer);
+		int value=size_of_list;
+		cout<<"sizeof"<<size_of_list<<endl;
+		if(size_of_list==-1)//CHECK HERE!!!!
+		   cout<<"PLease login first"<<endl;
+		else if(size_of_list==-2)
+			cout<<"No groups yet."<<endl;
+		else
 		{
-			readbytes=recv(client_fd,buffer,512,0);
-			cout<<val+1<<")"<<buffer<<endl;
-			memset(buffer,'\0',512);
+			//cout<<"list size is "<<size_of_list<<endl;
 			x=send(client_fd,"ok",sizeof("ok"),0);
-			val++;
+			//break;
+			memset(buffer,'\0',512);
+			//cout<<"before while "<<buffer<<endl;
+			int val=0;
+			while(val<value)
+			{	
+				//cout<<"inside while "<<value<<endl;
+				readbytes=recv(client_fd,buffer,512,0);
+				//cout<<"rcvd "<<buffer<<endl;
+				cout<<val+1<<")"<<buffer<<endl;
+				memset(buffer,'\0',512);
+				x=send(client_fd,"ok",sizeof("ok"),0);
+				val++;
+				//cout<<val<<endl;
 
 
+			}
 
-		}
-
-		int ret;
-		readbytes=recv(client_fd,&ret,sizeof(ret),0);
-		//cout<<buffer<<endl;
-		if(ret==-1)
-			cout<<"PLease login first"<<endl;
+			// int ret;
+			// readbytes=recv(client_fd,&ret,sizeof(ret),0);
+			//cout<<buffer<<endl;
+			
 		
-		memset(buffer,'\0',512);
-		// x=send(client_fd,spaced_token[1],sizeof(string(spaced_token[1])),0);
+				memset(buffer,'\0',512);
+		}// x=send(client_fd,spaced_token[1],sizeof(string(spaced_token[1])),0);
 		// memset(buffer,'\0',512);
 		// readbytes=recv(client_fd,buffer,512,0);
 
 		
 		
 
-	}
+		}
 	else if(strcmp(spaced_token[0],"list_files")==0)
 	{
 		int x=send(client_fd,"list_files",sizeof(string("list_files")),0);
@@ -434,8 +458,15 @@ void * start_client(void *y)
 
 		int x=send(client_fd,"upload_file",sizeof(string("upload_file")),0);
 		//cout<<"sent uname"<<x;
+		
 		int readbytes=recv(client_fd,buffer,512,0);
-		memset(buffer,'\0',512);
+		if(strcmp(buffer,"notlogged")==0)
+		{	cout<<"PLease log in first"<<endl;
+
+		memset(buffer,'\0',512);}
+		else
+		{
+
 		//change the hash thing here
 		//spaced_token[1] contains the entire path.So extract the filename from the pathname		
 		
@@ -551,7 +582,7 @@ void * start_client(void *y)
 	}
 
 
-
+}
 //#####################################################done###################################################
 
 
